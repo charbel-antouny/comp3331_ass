@@ -7,6 +7,8 @@ package com.charbelantouny;
 public class cdht {
 
     public static void main(String[] args) {
-	    // code
+	    int identity = Integer.parseInt(args[0]);
+        int peer1 = Integer.parseInt(args[1]);
+        int peer2 = Integer.parseInt(args[2]);
     }
 }

@@ -22,6 +22,10 @@ public class cdht {
         int suc1 = Integer.parseInt(args[1]);
         int suc2 = Integer.parseInt(args[2]);
 
+        // Start threads to manage file requests
+        FileManager fm = new FileManager(peer, suc1);
+        fm.sendReceive();
+
         // Create a socket for sending and receiving UDP packets.
         DatagramSocket socket = new DatagramSocket(50000+peer);
 

@@ -1,4 +1,3 @@
-package com.charbelantouny;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -24,35 +23,49 @@ public class FileManager {
     private int peer;
     private int suc1;
 
+    /**
+     * This is the main method, which contains two threads constantly waiting to send and receive file requests.
+     * The send thread listens for user input for a file, while the listen thread waits to receive a file request.
+     * @throws Exception
+     */
     public void sendReceive () throws Exception {
 
         Thread listenThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
+                    // Wait to accept an incoming connection
                     ServerSocket server = new ServerSocket(50000+peer);
                     while (true) {
                         Socket connection = server.accept();
                         BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
                         String message = in.readLine();
 
-                        // TODO NEED TO MODIFY TO CHECK IF RESPONSE
-
-                        Pattern p = Pattern.compile(".*?(\\d+).*?(\\d+).*");
-                        Matcher m = p.matcher(message);
-                        m.matches();
-                        int file = Integer.parseInt(m.group(1));
-                        int origin = Integer.parseInt(m.group(2));
-                        //
-
-                        if (hash(file) < suc1) {
-                            System.out.println("    File "+file+" is here.\n" +
-                                    "    A response message, destined for peer "+origin+", has been sent.");
-                            // TODO
+                        // Process the received message
+                        if (message.contains("response")) {
+                            System.out.println(message);
                         } else {
-                            System.out.println("    File "+file+" is not stored here.\n" +
-                                    "    File request message has been forwarded to my successor.");
-                            // TODO
+                            Pattern p = Pattern.compile(".*?(\\d+).*?(\\d+).*");
+                            Matcher m = p.matcher(message);
+                            m.matches();
+                            int file = Integer.parseInt(m.group(1));
+                            int origin = Integer.parseInt(m.group(2));
+
+                            if (hash(file) < suc1) {
+                                System.out.println("    File " + file + " is here.\n" +
+                                        "    A response message, destined for peer " + origin + ", has been sent.");
+                                Socket s = new Socket(lhost, 50000 + origin);
+                                String reply = "    Received a response message from peer " + peer + ", " +
+                                        "which has the file " + file + ".";
+                                DataOutputStream out = new DataOutputStream(s.getOutputStream());
+                                out.writeBytes(reply);
+                            } else {
+                                System.out.println("    File " + file + " is not stored here.\n" +
+                                        "    File request message has been forwarded to my successor.");
+                                Socket s = new Socket(lhost, 50000 + suc1);
+                                DataOutputStream out = new DataOutputStream(s.getOutputStream());
+                                out.writeBytes(message);
+                            }
                         }
                     }
                 } catch (IOException e) {
@@ -92,6 +105,11 @@ public class FileManager {
 
     }
 
+    /**
+     * This is a helper method used simply to compute the hash of a file name.
+     * @param file
+     * @return the hashed file name.
+     */
     private int hash (int file) {
         file += 1;
         file = file % 256;

@@ -1,4 +1,3 @@
-package com.charbelantouny;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -13,6 +12,11 @@ import java.util.regex.Pattern;
  */
 public class cdht {
 
+    /**
+     * The main function sends ping requests and contains a second thread to listen for responses.
+     * @param args contains the identity of the peer and its two successors.
+     * @throws Exception
+     */
     public static void main(String[] args) throws Exception {
 	    if (args.length != 3) {
             System.out.println("3 arguments required.");
@@ -68,6 +72,13 @@ public class cdht {
         }
     }
 
+    /**
+     * A helper function that prints requests and responses, and calls the method to send a response if a request is received.
+     * @param dgp the packet that contains a response (if applicable).
+     * @param s the socket to send a response (if applicable).
+     * @param peer identity of this peer.
+     * @throws Exception
+     */
     private static void printInfo (DatagramPacket dgp, DatagramSocket s, int peer) throws Exception {
         String line = new String(dgp.getData(), 0, dgp.getLength());
         System.out.println(line);
@@ -80,7 +91,13 @@ public class cdht {
         }
     }
 
-    // method for sending request
+    /**
+     * Helper method that sends a request message to a successor.
+     * @param s the socket that sends the request.
+     * @param peer identity of this peer.
+     * @param suc identity of the successor.
+     * @throws Exception
+     */
     private static void sendRequest (DatagramSocket s, int peer, int suc) throws Exception {
         byte[] buf;
         String message = "A ping request message was received from Peer " + peer + ".";
@@ -89,10 +106,16 @@ public class cdht {
         s.send(req);
     }
 
-    // method for sending response
+    /**
+     * A helper method to send a response to a request.
+     * @param s socket used to send response.
+     * @param dgp packet used to send response.
+     * @param id identity of the peer that sent the request.
+     * @param peer identity of this peer.
+     * @throws Exception
+     */
     private static void sendResponse (DatagramSocket s, DatagramPacket dgp, String id, int peer) throws Exception {
         byte[] buf;
-        //int peer = dgp.getPort() - 50000;
         String message = "A ping response message was received from Peer " + peer + ".";
         buf = message.getBytes();
         DatagramPacket res = new DatagramPacket(buf, buf.length, dgp.getAddress(), 50000+Integer.parseInt(id));

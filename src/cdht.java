@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,10 +25,6 @@ public class cdht {
         int peer = Integer.parseInt(args[0]);
         int suc1 = Integer.parseInt(args[1]);
         int suc2 = Integer.parseInt(args[2]);
-
-        // Start threads to manage file requests
-        FileManager fm = new FileManager(peer, suc1);
-        fm.sendReceive();
 
         // Create a socket for sending and receiving UDP packets.
         DatagramSocket socket = new DatagramSocket(50000+peer);
@@ -58,16 +55,36 @@ public class cdht {
             }
         });
         t.start();
+
+        // Thread that listens for 'quit'
+        Thread quitThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    Scanner scanner = new Scanner(System.in);
+                    String line = scanner.nextLine();
+                    if (line.contains("quit")) {
+                        // TODO this, then another thread to listen for quit + setters in FM class
+                    }
+                }
+            }
+        });
+
         // Pause execution before begin sending and receiving (for visual benefit)
-        Thread.sleep(10000);
+        Thread.sleep(2000);
 
         while (true) {
             // Send a ping request to successors
             sendRequest(socket, peer, suc1);
             sendRequest(socket, peer, suc2);
 
+            // Start threads to manage file requests
+            FileManager fm = new FileManager(peer, suc1);
+            fm.sendReceive();
+            quitThread.start();
+
             // Delay before sending another ping request.
-            Thread.sleep(20000);
+            Thread.sleep(10000);
         }
     }
 

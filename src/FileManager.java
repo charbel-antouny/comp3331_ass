@@ -1,4 +1,3 @@
-
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -44,6 +43,7 @@ public class FileManager {
                         // Process the received message
                         if (message.contains("response")) {
                             System.out.println(message);
+
                         } else {
                             Pattern p = Pattern.compile(".*?(\\d+).*?(\\d+).*");
                             Matcher m = p.matcher(message);
@@ -51,7 +51,7 @@ public class FileManager {
                             int file = Integer.parseInt(m.group(1));
                             int origin = Integer.parseInt(m.group(2));
 
-                            if (hash(file) < suc1) {
+                            if ((hash(file) < suc1) || peer > suc1) {
                                 System.out.println("    File " + file + " is here.\n" +
                                         "    A response message, destined for peer " + origin + ", has been sent.");
                                 Socket s = new Socket(lhost, 50000 + origin);
@@ -59,12 +59,14 @@ public class FileManager {
                                         "which has the file " + file + ".";
                                 DataOutputStream out = new DataOutputStream(s.getOutputStream());
                                 out.writeBytes(reply);
+                                s.close();
                             } else {
                                 System.out.println("    File " + file + " is not stored here.\n" +
                                         "    File request message has been forwarded to my successor.");
                                 Socket s = new Socket(lhost, 50000 + suc1);
                                 DataOutputStream out = new DataOutputStream(s.getOutputStream());
                                 out.writeBytes(message);
+                                s.close();
                             }
                         }
                     }
@@ -93,6 +95,7 @@ public class FileManager {
                             String message = line.trim() + " original " + peer;
                             DataOutputStream out = new DataOutputStream(s.getOutputStream());
                             out.writeBytes(message);
+                            s.close();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -102,7 +105,6 @@ public class FileManager {
             }
         });
         sendThread.start();
-
     }
 
     /**

@@ -43,7 +43,6 @@ public class FileManager {
                         // Process the received message
                         if (message.contains("response")) {
                             System.out.println(message);
-
                         } else {
                             Pattern p = Pattern.compile(".*?(\\d+).*?(\\d+).*");
                             Matcher m = p.matcher(message);
@@ -100,6 +99,16 @@ public class FileManager {
                             e.printStackTrace();
                         }
                         System.out.println("    File request message for " + file + " has been sent to my successor.");
+
+                    } else if (line.contains("quit")) {
+                        int pred1 = cdht.getPred1();
+                        int pred2 = cdht.getPred2();
+                        // Check if predecessors are in correct order
+                        if (pred1 > pred2) {
+                            int temp = pred2;
+                            pred2 = pred1;
+                            pred1 = temp;
+                        }
                     }
                 }
             }

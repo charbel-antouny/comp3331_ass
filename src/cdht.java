@@ -2,7 +2,6 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -11,6 +10,17 @@ import java.util.regex.Pattern;
  * This is a circular DHT network for the COMP3331 assignment.
  */
 public class cdht {
+
+    private static int pred1 = -1;
+    private static int pred2 = -1;
+
+    public static int getPred1 () {
+        return pred1;
+    }
+
+    public static int getPred2 () {
+        return pred2;
+    }
 
     /**
      * The main function sends ping requests and contains a second thread to listen for responses.
@@ -32,7 +42,6 @@ public class cdht {
         // Create a separate thread to continuously listen for incoming packets
         final DatagramSocket sock = socket;
         final int refPeer = peer;
-
         Thread t = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -56,22 +65,8 @@ public class cdht {
         });
         t.start();
 
-        // Thread that listens for 'quit'
-        Thread quitThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    Scanner scanner = new Scanner(System.in);
-                    String line = scanner.nextLine();
-                    if (line.contains("quit")) {
-                        // TODO this, then another thread to listen for quit + setters in FM class
-                    }
-                }
-            }
-        });
-
         // Pause execution before begin sending and receiving (for visual benefit)
-        Thread.sleep(2000);
+        Thread.sleep(5000); // TODO
 
         while (true) {
             // Send a ping request to successors
@@ -81,7 +76,6 @@ public class cdht {
             // Start threads to manage file requests
             FileManager fm = new FileManager(peer, suc1);
             fm.sendReceive();
-            quitThread.start();
 
             // Delay before sending another ping request.
             Thread.sleep(10000);
@@ -102,7 +96,12 @@ public class cdht {
             Pattern p = Pattern.compile(".*?(\\d+).*");
             Matcher m = p.matcher(line);
             m.matches();
-            String id = m.group(1);
+            int id = Integer.parseInt(m.group(1));
+            if (pred1 == -1) {
+                pred1 = id;
+            } else if (pred2 == -1) {
+                pred2 = id;
+            } // TODO needs to be fixed to cater for case after peer quits
             sendResponse(s, dgp, id, peer);
         }
     }
@@ -130,11 +129,23 @@ public class cdht {
      * @param peer identity of this peer.
      * @throws Exception
      */
-    private static void sendResponse (DatagramSocket s, DatagramPacket dgp, String id, int peer) throws Exception {
+    private static void sendResponse (DatagramSocket s, DatagramPacket dgp, int id, int peer) throws Exception {
         byte[] buf;
         String message = "A ping response message was received from Peer " + peer + ".";
         buf = message.getBytes();
-        DatagramPacket res = new DatagramPacket(buf, buf.length, dgp.getAddress(), 50000+Integer.parseInt(id));
+        DatagramPacket res = new DatagramPacket(buf, buf.length, dgp.getAddress(), 50000+id);
         s.send(res);
+    }
+
+    /**
+     * A helper function that checks to make sure the predecessors of this peer are in the correct order.
+     * pred2 should be closest anticlockwise, with pred1 preceding pred2.
+     */
+    private final void checkPred () {
+        if (pred1 > pred2) {
+            int temp = pred2;
+            pred2 = pred1;
+            pred1 = temp;
+        }
     }
 }

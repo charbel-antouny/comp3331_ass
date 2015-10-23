@@ -15,6 +15,7 @@ public class cdht {
     private static int pred2 = -1;
     private static int suc1;
     private static int suc2;
+    private static boolean flag = true;
 
     public static int getPred1 () {
         return pred1;
@@ -54,8 +55,12 @@ public class cdht {
         suc1 = Integer.parseInt(args[1]);
         suc2 = Integer.parseInt(args[2]);
 
+        // Start threads to manage file requests
+        FileManager fm = new FileManager(peer, suc1, suc2);
+        fm.sendReceive();
+
         // Create a socket for sending and receiving UDP packets.
-        DatagramSocket socket = new DatagramSocket(50000+ peer);
+        DatagramSocket socket = new DatagramSocket(50000+peer);
 
         // Create a separate thread to continuously listen for incoming packets
         final DatagramSocket sock = socket;
@@ -84,16 +89,12 @@ public class cdht {
         t.start();
 
         // Pause execution before begin sending and receiving (for visual benefit)
-        Thread.sleep(5000); // TODO REMOVE
+        Thread.sleep(1000);
 
         while (true) {
             // Send a ping request to successors
             sendRequest(socket, peer, suc1);
             sendRequest(socket, peer, suc2);
-
-            // Start threads to manage file requests
-            FileManager fm = new FileManager(peer, suc1, suc2);
-            fm.sendReceive();
 
             // Delay before sending another ping request.
             Thread.sleep(10000);
@@ -115,14 +116,12 @@ public class cdht {
             Matcher m = p.matcher(line);
             m.matches();
             int id = Integer.parseInt(m.group(1));
-            if (pred1 != id && pred2 != id) {
-                // TODO need to check id < predX and if predX == -1
+            if (flag) {
+                pred2 = id;
+            } else {
+                pred1 = id;
             }
-//            if (pred1 == -1) {
-//                pred1 = id;
-//            } else if (pred2 == -1) {
-//                pred2 = id;
-//            }
+            flag = !flag;
             sendResponse(s, dgp, id, peer);
         }
     }

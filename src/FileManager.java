@@ -13,14 +13,16 @@ import java.util.regex.Pattern;
  * This class manages file requests and responses.
  */
 public class FileManager {
-    public FileManager (int peer, int suc1) {
+    public FileManager (int peer, int suc1, int suc2) {
         this.peer = peer;
         this.suc1 = suc1;
+        this.suc2 = suc2;
     }
 
     private final String lhost = "localhost";
     private int peer;
     private int suc1;
+    private int suc2;
 
     /**
      * This is the main method, which contains two threads constantly waiting to send and receive file requests.
@@ -43,6 +45,25 @@ public class FileManager {
                         // Process the received message
                         if (message.contains("response")) {
                             System.out.println(message);
+                        } else if (message.contains("depart")) {
+                            Pattern p = Pattern.compile(".*?(\\d+).*?(\\d+).*?(\\d+)");
+                            Matcher m = p.matcher(message);
+                            m.matches();
+                            int depart = Integer.parseInt(m.group(1));
+                            int departSuc1 = Integer.parseInt(m.group(2));
+                            int departSuc2 = Integer.parseInt(m.group(3));
+                            if (suc1 == depart) {
+                                cdht.setSuc1(departSuc1);
+                                cdht.setSuc2(departSuc2);
+                                suc1 = departSuc1;
+                                suc2 = departSuc2;
+                            } else {
+                                cdht.setSuc2(departSuc1);
+                                suc2 = departSuc1;
+                            }
+                            System.out.println("    Peer "+depart+" will depart from the network.\n" +
+                                    "    My first successor is now peer "+suc1+".\n" +
+                                    "    My second successor is now peer "+suc2+".");
                         } else {
                             Pattern p = Pattern.compile(".*?(\\d+).*?(\\d+).*");
                             Matcher m = p.matcher(message);
@@ -108,6 +129,22 @@ public class FileManager {
                             int temp = pred2;
                             pred2 = pred1;
                             pred1 = temp;
+                            cdht.setPred1(pred1);
+                            cdht.setPred2(pred2);
+                        }
+                        try {
+                            Socket s = new Socket(lhost, 50000+cdht.getPred1());
+                            String message = "depart "+peer+" successorOne "+suc1+" successorTwo "+suc2;
+                            DataOutputStream out = new DataOutputStream(s.getOutputStream());
+                            out.writeBytes(message);
+                            s.close();
+
+                            s = new Socket(lhost, 50000+cdht.getPred2());
+                            out = new DataOutputStream(s.getOutputStream());
+                            out.writeBytes(message);
+                            s.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
                     }
                 }
@@ -118,7 +155,7 @@ public class FileManager {
 
     /**
      * This is a helper method used simply to compute the hash of a file name.
-     * @param file
+     * @param file the file name to be hashed.
      * @return the hashed file name.
      */
     private int hash (int file) {

@@ -13,6 +13,8 @@ public class cdht {
 
     private static int pred1 = -1;
     private static int pred2 = -1;
+    private static int suc1;
+    private static int suc2;
 
     public static int getPred1 () {
         return pred1;
@@ -20,6 +22,22 @@ public class cdht {
 
     public static int getPred2 () {
         return pred2;
+    }
+
+    public static void setPred2(int pred2) {
+        cdht.pred2 = pred2;
+    }
+
+    public static void setPred1(int pred1) {
+        cdht.pred1 = pred1;
+    }
+
+    public static void setSuc1(int suc1) {
+        cdht.suc1 = suc1;
+    }
+
+    public static void setSuc2(int suc2) {
+        cdht.suc2 = suc2;
     }
 
     /**
@@ -33,11 +51,11 @@ public class cdht {
             return;
         }
         int peer = Integer.parseInt(args[0]);
-        int suc1 = Integer.parseInt(args[1]);
-        int suc2 = Integer.parseInt(args[2]);
+        suc1 = Integer.parseInt(args[1]);
+        suc2 = Integer.parseInt(args[2]);
 
         // Create a socket for sending and receiving UDP packets.
-        DatagramSocket socket = new DatagramSocket(50000+peer);
+        DatagramSocket socket = new DatagramSocket(50000+ peer);
 
         // Create a separate thread to continuously listen for incoming packets
         final DatagramSocket sock = socket;
@@ -66,7 +84,7 @@ public class cdht {
         t.start();
 
         // Pause execution before begin sending and receiving (for visual benefit)
-        Thread.sleep(5000); // TODO
+        Thread.sleep(5000); // TODO REMOVE
 
         while (true) {
             // Send a ping request to successors
@@ -74,7 +92,7 @@ public class cdht {
             sendRequest(socket, peer, suc2);
 
             // Start threads to manage file requests
-            FileManager fm = new FileManager(peer, suc1);
+            FileManager fm = new FileManager(peer, suc1, suc2);
             fm.sendReceive();
 
             // Delay before sending another ping request.
@@ -97,11 +115,14 @@ public class cdht {
             Matcher m = p.matcher(line);
             m.matches();
             int id = Integer.parseInt(m.group(1));
-            if (pred1 == -1) {
-                pred1 = id;
-            } else if (pred2 == -1) {
-                pred2 = id;
-            } // TODO needs to be fixed to cater for case after peer quits
+            if (pred1 != id && pred2 != id) {
+                // TODO need to check id < predX and if predX == -1
+            }
+//            if (pred1 == -1) {
+//                pred1 = id;
+//            } else if (pred2 == -1) {
+//                pred2 = id;
+//            }
             sendResponse(s, dgp, id, peer);
         }
     }
@@ -135,17 +156,5 @@ public class cdht {
         buf = message.getBytes();
         DatagramPacket res = new DatagramPacket(buf, buf.length, dgp.getAddress(), 50000+id);
         s.send(res);
-    }
-
-    /**
-     * A helper function that checks to make sure the predecessors of this peer are in the correct order.
-     * pred2 should be closest anticlockwise, with pred1 preceding pred2.
-     */
-    private final void checkPred () {
-        if (pred1 > pred2) {
-            int temp = pred2;
-            pred2 = pred1;
-            pred1 = temp;
-        }
     }
 }
